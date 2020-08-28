@@ -18,7 +18,7 @@
 ## Introduction
 
 ![Humorous image of software quality estimation as a count of how many expletives
-you shout when reading code](http://www.osnews.com/images/comics/wtfm.jpg)
+you shout when reading code](https://www.osnews.com/images/comics/wtfm.jpg)
 
 Software engineering principles, from Robert C. Martin's book
 [_Clean Code_](https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882),
@@ -100,7 +100,7 @@ setTimeout(blastOff, 86400000);
 
 ```javascript
 // Declare them as capitalized named constants.
-const MILLISECONDS_IN_A_DAY = 86400000;
+const MILLISECONDS_IN_A_DAY = 86_400_000;
 
 setTimeout(blastOff, MILLISECONDS_IN_A_DAY);
 ```
@@ -125,7 +125,7 @@ saveCityZipCode(
 ```javascript
 const address = "One Infinite Loop, Cupertino 95014";
 const cityZipCodeRegex = /^[^,\\]+[,\\\s]+(.+?)\s*(\d{5})?$/;
-const [, city, zipCode] = address.match(cityZipCodeRegex) || [];
+const [_, city, zipCode] = address.match(cityZipCodeRegex) || [];
 saveCityZipCode(city, zipCode);
 ```
 
@@ -251,11 +251,12 @@ destructuring syntax. This has a few advantages:
 
 1. When someone looks at the function signature, it's immediately clear what
    properties are being used.
-2. Destructuring also clones the specified primitive values of the argument
+2. It can be used to simulate named parameters.
+3. Destructuring also clones the specified primitive values of the argument
    object passed into the function. This can help prevent side effects. Note:
    objects and arrays that are destructured from the argument object are NOT
    cloned.
-3. Linters can warn you about unused properties, which would be impossible
+4. Linters can warn you about unused properties, which would be impossible
    without destructuring.
 
 **Bad:**
@@ -264,6 +265,9 @@ destructuring syntax. This has a few advantages:
 function createMenu(title, body, buttonText, cancellable) {
   // ...
 }
+
+createMenu("Foo", "Bar", "Baz", true);
+
 ```
 
 **Good:**
@@ -287,7 +291,7 @@ createMenu({
 
 This is by far the most important rule in software engineering. When functions
 do more than one thing, they are harder to compose, test, and reason about.
-When you can isolate a function to just one action, they can be refactored
+When you can isolate a function to just one action, it can be refactored
 easily and your code will read much cleaner. If you take nothing else away from
 this guide other than this, you'll be ahead of many developers.
 
@@ -539,7 +543,7 @@ const menuConfig = {
 };
 
 function createMenu(config) {
-  config = Object.assign(
+  let finalConfig = Object.assign(
     {
       title: "Foo",
       body: "Bar",
@@ -548,7 +552,7 @@ function createMenu(config) {
     },
     config
   );
-
+  return finalConfig
   // config now equals: {title: "Order", body: "Bar", buttonText: "Send", cancellable: true}
   // ...
 }
@@ -646,7 +650,7 @@ then any other function that uses that `cart` array will be affected by this
 addition. That may be great, however it can be bad too. Let's imagine a bad
 situation:
 
-The user clicks the "Purchase", button which calls a `purchase` function that
+The user clicks the "Purchase" button which calls a `purchase` function that
 spawns a network request and sends the `cart` array to the server. Because
 of a bad network connection, the `purchase` function has to keep retrying the
 request. Now, what if in the meantime the user accidentally clicks "Add to Cart"
@@ -1668,7 +1672,7 @@ class DOMTraverser {
 
   setup() {
     this.rootNode = this.settings.rootNode;
-    this.animationModule.setup();
+    this.settings.animationModule.setup();
   }
 
   traverse() {
@@ -1830,9 +1834,9 @@ didn't break anything. Deciding on what constitutes an adequate amount is up
 to your team, but having 100% coverage (all statements and branches) is how
 you achieve very high confidence and developer peace of mind. This means that
 in addition to having a great testing framework, you also need to use a
-[good coverage tool](http://gotwarlost.github.io/istanbul/).
+[good coverage tool](https://gotwarlost.github.io/istanbul/).
 
-There's no excuse to not write tests. There are [plenty of good JS test frameworks](http://jstherightway.org/#testing-tools), so find one that your team prefers.
+There's no excuse to not write tests. There are [plenty of good JS test frameworks](https://jstherightway.org/#testing-tools), so find one that your team prefers.
 When you find one that works for your team, then aim to always write tests
 for every new feature/module you introduce. If your preferred method is
 Test Driven Development (TDD), that is great, but the main point is to just
@@ -1908,11 +1912,11 @@ import { writeFile } from "fs";
 
 get(
   "https://en.wikipedia.org/wiki/Robert_Cecil_Martin",
-  (requestErr, response) => {
+  (requestErr, response, body) => {
     if (requestErr) {
       console.error(requestErr);
     } else {
-      writeFile("article.html", response.body, writeErr => {
+      writeFile("article.html", body, writeErr => {
         if (writeErr) {
           console.error(writeErr);
         } else {
@@ -1927,12 +1931,12 @@ get(
 **Good:**
 
 ```javascript
-import { get } from "request";
-import { writeFile } from "fs";
+import { get } from "request-promise";
+import { writeFile } from "fs-extra";
 
 get("https://en.wikipedia.org/wiki/Robert_Cecil_Martin")
-  .then(response => {
-    return writeFile("article.html", response);
+  .then(body => {
+    return writeFile("article.html", body);
   })
   .then(() => {
     console.log("File written");
@@ -1956,11 +1960,11 @@ today!
 
 ```javascript
 import { get } from "request-promise";
-import { writeFile } from "fs-promise";
+import { writeFile } from "fs-extra";
 
 get("https://en.wikipedia.org/wiki/Robert_Cecil_Martin")
-  .then(response => {
-    return writeFile("article.html", response);
+  .then(body => {
+    return writeFile("article.html", body);
   })
   .then(() => {
     console.log("File written");
@@ -1974,19 +1978,21 @@ get("https://en.wikipedia.org/wiki/Robert_Cecil_Martin")
 
 ```javascript
 import { get } from "request-promise";
-import { writeFile } from "fs-promise";
+import { writeFile } from "fs-extra";
 
 async function getCleanCodeArticle() {
   try {
-    const response = await get(
+    const body = await get(
       "https://en.wikipedia.org/wiki/Robert_Cecil_Martin"
     );
-    await writeFile("article.html", response);
+    await writeFile("article.html", body);
     console.log("File written");
   } catch (err) {
     console.error(err);
   }
 }
+
+getCleanCodeArticle()
 ```
 
 **[⬆ back to top](#table-of-contents)**
@@ -2074,7 +2080,7 @@ getdata()
 
 Formatting is subjective. Like many rules herein, there is no hard and fast
 rule that you must follow. The main point is DO NOT ARGUE over formatting.
-There are [tons of tools](http://standardjs.com/rules.html) to automate this.
+There are [tons of tools](https://standardjs.com/rules.html) to automate this.
 Use one! It's a waste of time and money for engineers to argue over formatting.
 
 For things that don't fall under the purview of automatic formatting
@@ -2349,25 +2355,27 @@ const actions = function() {
 
 This is also available in other languages:
 
-- ![fr](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/France.png) **French**:
-  [GavBaros/clean-code-javascript-fr](https://github.com/GavBaros/clean-code-javascript-fr)
+- ![am](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Armenia.png) **Armenian**: [hanumanum/clean-code-javascript/](https://github.com/hanumanum/clean-code-javascript)
+- ![bd](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Bangladesh.png) **Bangla(বাংলা)**: [InsomniacSabbir/clean-code-javascript/](https://github.com/InsomniacSabbir/clean-code-javascript/)
 - ![br](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Brazil.png) **Brazilian Portuguese**: [fesnt/clean-code-javascript](https://github.com/fesnt/clean-code-javascript)
-- ![es](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Uruguay.png) **Spanish**: [andersontr15/clean-code-javascript](https://github.com/andersontr15/clean-code-javascript-es)
-- ![es](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Spain.png) **Spanish**: [tureey/clean-code-javascript](https://github.com/tureey/clean-code-javascript)
-- ![cn](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/China.png) **Chinese**:
+- ![cn](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/China.png) **Simplified Chinese**:
   - [alivebao/clean-code-js](https://github.com/alivebao/clean-code-js)
   - [beginor/clean-code-javascript](https://github.com/beginor/clean-code-javascript)
+- ![tw](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Taiwan.png) **Traditional Chinese**: [AllJointTW/clean-code-javascript](https://github.com/AllJointTW/clean-code-javascript)
+- ![fr](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/France.png) **French**: [GavBaros/clean-code-javascript-fr](https://github.com/GavBaros/clean-code-javascript-fr)
 - ![de](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Germany.png) **German**: [marcbruederlin/clean-code-javascript](https://github.com/marcbruederlin/clean-code-javascript)
+- ![id](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Indonesia.png) **Indonesia**: [andirkh/clean-code-javascript/](https://github.com/andirkh/clean-code-javascript/)
+- ![it](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Italy.png) **Italian**: [frappacchio/clean-code-javascript/](https://github.com/frappacchio/clean-code-javascript/)
+- ![ja](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Japan.png) **Japanese**: [mitsuruog/clean-code-javascript/](https://github.com/mitsuruog/clean-code-javascript/)
 - ![kr](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/South-Korea.png) **Korean**: [qkraudghgh/clean-code-javascript-ko](https://github.com/qkraudghgh/clean-code-javascript-ko)
 - ![pl](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Poland.png) **Polish**: [greg-dev/clean-code-javascript-pl](https://github.com/greg-dev/clean-code-javascript-pl)
 - ![ru](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Russia.png) **Russian**:
   - [BoryaMogila/clean-code-javascript-ru/](https://github.com/BoryaMogila/clean-code-javascript-ru/)
   - [maksugr/clean-code-javascript](https://github.com/maksugr/clean-code-javascript)
+- ![es](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Spain.png) **Spanish**: [tureey/clean-code-javascript](https://github.com/tureey/clean-code-javascript)
+- ![es](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Uruguay.png) **Spanish**: [andersontr15/clean-code-javascript](https://github.com/andersontr15/clean-code-javascript-es)
+- ![tr](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Turkey.png) **Turkish**: [bsonmez/clean-code-javascript](https://github.com/bsonmez/clean-code-javascript/tree/turkish-translation)
+- ![ua](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Ukraine.png) **Ukrainian**: [mindfr1k/clean-code-javascript-ua](https://github.com/mindfr1k/clean-code-javascript-ua)
 - ![vi](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Vietnam.png) **Vietnamese**: [hienvd/clean-code-javascript/](https://github.com/hienvd/clean-code-javascript/)
-- ![ja](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Japan.png) **Japanese**: [mitsuruog/clean-code-javascript/](https://github.com/mitsuruog/clean-code-javascript/)
-- ![id](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Indonesia.png) **Indonesia**:
-  [andirkh/clean-code-javascript/](https://github.com/andirkh/clean-code-javascript/)
-- ![it](https://raw.githubusercontent.com/gosquared/flags/master/flags/flags/shiny/24/Italy.png) **Italian**:
-  [frappacchio/clean-code-javascript/](https://github.com/frappacchio/clean-code-javascript/)
 
 **[⬆ back to top](#table-of-contents)**
